@@ -3,43 +3,36 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var http = require('http');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
+var ipRouter = require('./routes/ip');
 
 var app = express();
 
-//Cosas requeridas
-var cors = require('cors');
-var server = require("http").Server(app);
-var WebSocketServer = require("websocket").server;
+//
+var WebSocket = require("ws");
 
-const servidorWebsocket = new WebSocketServer({httpServer: server, autoAcceptConnections: false});
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
 
-function origenValido (origin) {
-  if (origin === "http://localhost:3000") {
-    return true;
-  }
-  return false;
-}
-
-servidorWebsocket.on("request", (request) => {
-  if (!origenValido(request.origin)){
-    request.reject();
-    console.log("Conexión rechazada");
-    return;
-  }
-  const conexion = request.accept(null, request.origin);
-  conexion.on("message", (message) => {
-    console.log("Mensaje: " + message.utf8Data);
-    conexion.sendUTF(message.utf8Data);
+wss.on('connection',  function connection(ws) {
+  ws.on('message', function(message) {
+    wss.broadcast(message.toString());
   });
-  conexion.on("close", (reasonCode, description) => {
-    console.log("Cliente desconectado")
+});
+
+wss.broadcast = function broadcast(msg) {
+  console.log(msg);
+  wss.clients.forEach(function each(client) {
+    client.send(msg);
   });
+};
+
+server.listen(3100, function listening() {
+  console.log("Escuchando en: " + server.address().port);
 })
-
-server.listen(('3100'), () => {console.log("Servidor iniciado en el puerto: 3100");})
 //
 
 // view engine setup
@@ -51,11 +44,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
-//
-app.use(cors());
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
+app.use('/ip', ipRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

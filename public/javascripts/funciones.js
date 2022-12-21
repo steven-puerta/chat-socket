@@ -22,8 +22,23 @@ function botonEnviar (autor, mensaje) {
     mensajeInput.value = "";
 }
 
-function conectarWebsocket () {
-    websocket = new WebSocket("ws://localhost:3100");
+async function conectarWebsocket () {
+
+    let ip = "";
+
+    obetenerIp = async function(event) {
+        //
+        const respuesta = await fetch("/ip", {
+            method: 'GET'
+        });
+        const respuestaRecibida = await respuesta.json();
+
+        ip = respuestaRecibida.ip;
+    }
+
+    await obetenerIp();
+
+    websocket = new WebSocket("ws://" + ip + ":3100");
 
     websocket.onopen = function (evt) {
         onOpen(evt)
