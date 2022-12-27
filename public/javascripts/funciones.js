@@ -5,19 +5,19 @@ function inicializar () {
     funcionBoton = function(event) {
         let autor = document.getElementById("nick");
         let mensaje = document.getElementById("mensaje");
+        let recipiente = document.getElementById("objetivo");
         console.log(autor.value);
         console.log(mensaje.value);
-        botonEnviar(autor.value, mensaje.value);
+        botonEnviar(autor.value, mensaje.value, recipiente.value);
     }
     boton.addEventListener("click", funcionBoton);
 
     conectarWebsocket();
 }
 
-function botonEnviar (autor, mensaje) {
-    let texto = autor + ": " + mensaje;
-    enviar(texto);
-    let autorInput = document.getElementById("nick");
+function botonEnviar (autor, mensaje, recipiente) {
+    //let texto = autor + ": " + mensaje;
+    enviar(autor, mensaje, recipiente);
     let mensajeInput = document.getElementById("mensaje");
     mensajeInput.value = "";
 }
@@ -59,7 +59,7 @@ async function conectarWebsocket () {
 
 function onOpen (evt) {
     document.getElementById("boton").disabled = false;
-    enviar("Alguien entró al canal");
+    enviar("Servidor", "Alguien entró al canal", "");
 }
 
 function onClose (evt) {
@@ -76,7 +76,9 @@ function onError (evt) {
     console.log("Error: " + evt.data);
 }
 
-function enviar(mensaje) {
-    console.log("Enviando: " + mensaje);
-    websocket.send(mensaje);
+function enviar(emisor, mensaje, recipiente) {
+    console.log("Emisor: " + emisor + ". Mensaje: " + mensaje + ". Recipiente: " + recipiente);
+    websocket.send("-"+emisor);
+    websocket.send("*"+recipiente);
+    websocket.send("+"+mensaje);
 }

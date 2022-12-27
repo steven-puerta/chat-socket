@@ -18,16 +18,37 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 wss.on('connection',  function connection(ws) {
+  ws.id = "";
+  let recipiente = "";
   ws.on('message', function(message) {
-    wss.broadcast(message.toString());
+    let mensaje = message.toString();
+    if(mensaje[0] == "-") {
+      ws.id = mensaje.slice(1, mensaje.length);
+    } else if (mensaje[0] == "*") {
+      if (mensaje.length > 1) {
+        recipiente = mensaje.slice(1, mensaje.length);
+      }
+    } else if (mensaje[0] == "+") {
+      mensaje = mensaje.slice(1, mensaje.length);
+      wss.broadcast(ws.id, mensaje, recipiente);
+      recipiente = "";
+    }
   });
 });
 
-wss.broadcast = function broadcast(msg) {
-  console.log(msg);
-  wss.clients.forEach(function each(client) {
-    client.send(msg);
-  });
+wss.broadcast = function broadcast(emisor, msg, recipiente) {
+  console.log(emisor + ": "  + msg + " => " + recipiente);
+  if (recipiente == "") {
+    wss.clients.forEach(function each(client) {
+      client.send(emisor + ": " + msg);
+    });
+  } else {
+    wss.clients.forEach(function each(client) {
+      if (client.id == emisor || client.id == recipiente) {
+        client.send("[Privado]" + emisor + ": " + msg);
+      }
+    });
+  }
 };
 
 server.listen(3100, function listening() {
